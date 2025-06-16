@@ -1,44 +1,80 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { socket } from "../socket";
+import { io, Socket } from "socket.io-client";
 
 export default function Home() {
+  const [messages, setMessages] = useState(["message here to get started"]);
+
+  const [socket, setSocket] = useState<Socket>();
+  const [inputMessage, setInputMessage] = useState("");
   const [isConnected, setIsConnected] = useState(false);
-  const [transport, setTransport] = useState("N/A");
 
   useEffect(() => {
-    if (socket.connected) {
-      onConnect();
-    }
-
-    function onConnect() {
-      setIsConnected(true);
-      setTransport(socket.io.engine.transport.name);
-
-      socket.io.engine.on("upgrade", (transport) => {
-        setTransport(transport.name);
-      });
-    }
-
-    function onDisconnect() {
-      setIsConnected(false);
-      setTransport("N/A");
-    }
-
-    socket.on("connect", onConnect);
-    socket.on("disconnect", onDisconnect);
+    const newSocket = io("http://localhost:8080");
+    setSocket(newSocket);
+    setIsConnected(true);
 
     return () => {
-      socket.off("connect", onConnect);
-      socket.off("disconnect", onDisconnect);
+      newSocket.disconnect();
     };
   }, []);
 
+  useEffect(() => {
+    if (socket) {
+      socket.on("message", (newMessage) => {
+        setMessages((prevMessages) => [...prevMessages, newMessage]);
+      });
+
+      return () => {
+        socket.off("message");
+      };
+    }
+  }, [socket]);
+
   return (
-    <div>
-      <p>Status: {isConnected ? "connected" : "disconnected"}</p>
-      <p>Transport: {transport}</p>
-    </div>
+    <>
+      {isConnected ? (
+        <div className="p-4">
+          <h1 className="text-xl font-bold mb-4">Socket.IO Messages</h1>
+          <ul className="space-y-2">
+            {messages.map((message, index) => (
+              <li key={index} className="p-2 bg-gray-100 rounded text-gray-800">
+                {message}
+              </li>
+            ))}
+          </ul>
+          <form
+            className="mt-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (inputMessage.trim()) {
+                socket?.emit("message", inputMessage);
+                setInputMessage("");
+              }
+            }}
+          >
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                className="flex-1 p-2 border rounded"
+                placeholder="Type a message..."
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-blue-300"
+                disabled={!inputMessage.trim()}
+              >
+                Send
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : (
+        <h1>Not connected</h1>
+      )}
+    </>
   );
 }

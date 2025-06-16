@@ -34,12 +34,17 @@ io.on("connection", (socket) => {
   console.log("A user connected");
 
   if (socket.recovered) {
-    console.log(`Recovered connection for socket ID: ${socket.id}`);
+    console.log(`Recovered connection for user ID: ${socket.data.userId}`);
   } else {
-    console.log(`New connection established with socket ID: ${socket.id}`);
+    console.log(
+      `New connection established with user ID: ${socket.data.userId}`
+    );
   }
-  socket.emit("message", "Welcome to the Socket.IO server!");
-  socket.broadcast.emit("message", `A new user has joined: ${socket.id}`);
+
+  socket.broadcast.emit(
+    "message",
+    `A new user has joined: ${socket.data.userId}`
+  );
 
   socket.on("disconnect", () => {
     console.log("A user disconnected");
@@ -47,7 +52,7 @@ io.on("connection", (socket) => {
 
   socket.on("message", (msg) => {
     console.log("Message received:", msg);
-    io.emit("message", `${socket.id} said ${msg}`);
+    io.emit("message", `${socket.data.userId} said ${msg}`);
   });
 });
 

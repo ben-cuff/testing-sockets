@@ -14,6 +14,17 @@ const io = new Server(http, {
 });
 
 io.use((socket, next) => {
+  const socketKey =
+    socket.handshake.auth["x-socket-key"];
+
+  if (socketKey !== "123456") {
+    return next(new Error("Invalid socket key"));
+  }
+
+  next();
+});
+
+io.use((socket, next) => {
   const userId = socket.handshake.auth.userId;
 
   // would validate userId here, e.g., check if it exists in the database

@@ -19,6 +19,7 @@ export default function Home() {
     const newSocket = io("http://localhost:8080", {
       auth: {
         userId: userId,
+        "x-socket-key": "123456",
       },
     });
 

@@ -8,12 +8,30 @@ export default function Home() {
 
   const [socket, setSocket] = useState<Socket>();
   const [inputMessage, setInputMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const newSocket = io("http://localhost:8080");
+    // would get userId from session here
+    const userId =
+      Math.random() > 0.5 ? "" : Math.random().toString(36).substring(2, 10);
+
+    const newSocket = io("http://localhost:8080", {
+      auth: {
+        userId: userId,
+      },
+    });
+
+    newSocket.on("connect", () => {
+      setIsConnected(true);
+    });
+
+    newSocket.on("connect_error", (error) => {
+      setErrorMessage(error.message);
+      return;
+    });
+
     setSocket(newSocket);
-    setIsConnected(true);
 
     return () => {
       newSocket.disconnect();
@@ -83,7 +101,10 @@ export default function Home() {
           </form>
         </div>
       ) : (
-        <h1>Not connected</h1>
+        <>
+          <h1>Not connected</h1>
+          <h3>{errorMessage}</h3>
+        </>
       )}
     </>
   );

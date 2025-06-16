@@ -13,6 +13,23 @@ const io = new Server(http, {
   },
 });
 
+io.use((socket, next) => {
+  const userId = socket.handshake.auth.userId;
+
+  // would validate userId here, e.g., check if it exists in the database
+  // For this example, we'll just check if it's a non-empty string
+
+  if (typeof userId !== "string" || userId.trim() === "") {
+    return next(new Error("Invalid user ID"));
+  }
+
+  socket.data.userId = userId;
+
+  console.log(`User ID ${userId} connected with socket ID: ${socket.id}`);
+
+  next();
+});
+
 io.on("connection", (socket) => {
   console.log("A user connected");
 

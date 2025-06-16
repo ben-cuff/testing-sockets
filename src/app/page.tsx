@@ -26,6 +26,16 @@ export default function Home() {
         setMessages((prevMessages) => [...prevMessages, newMessage]);
       });
 
+      socket.on("connect", () => {
+        if (socket.recovered) {
+          console.log(`Recovered connection for socket ID: ${socket.id}`);
+        } else {
+          console.log(
+            `New connection established with socket ID: ${socket.id}`
+          );
+        }
+      });
+
       return () => {
         socket.off("message");
       };

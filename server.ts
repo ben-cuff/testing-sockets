@@ -14,8 +14,7 @@ const io = new Server(http, {
 });
 
 io.use((socket, next) => {
-  const socketKey =
-    socket.handshake.auth["x-socket-key"];
+  const socketKey = socket.handshake.auth["x-socket-key"];
 
   if (socketKey !== "123456") {
     return next(new Error("Invalid socket key"));
@@ -42,7 +41,35 @@ io.use((socket, next) => {
 });
 
 io.on("connection", (socket) => {
-  console.log("A user connected");
+  socket.on("join_room", (room) => {
+    const roomObj = io.sockets.adapter.rooms.get(room);
+    const numClients = roomObj ? roomObj.size : 0;
+    const role = socket.handshake.auth.role;
+
+    if (numClients === 0) {
+      socket.join(room);
+      socket.data.role = role;
+      socket.emit("join_success", `Joined room: ${room} as ${role}`);
+    } else if (numClients === 1) {
+      const existingSocketId = roomObj && Array.from(roomObj)[0];
+      const existingSocket = existingSocketId
+        ? io.sockets.sockets.get(existingSocketId)
+        : undefined;
+      const existingRole = existingSocket?.data.role;
+
+      if (existingRole === role) {
+        socket.emit("join_error", `Room already has an ${role}`);
+        return;
+      }
+
+      socket.join(room);
+      socket.data.role = role;
+      socket.emit("join_success", `Joined room: ${room} as ${role}`);
+    } else {
+      socket.emit("room_full", "Room is full. Only 2 clients allowed.");
+      socket.disconnect();
+    }
+  });
 
   if (socket.recovered) {
     console.log(`Recovered connection for user ID: ${socket.data.userId}`);
